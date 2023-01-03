@@ -1,6 +1,19 @@
 import cv2
 import os
 import phase.pyphase as phase
+import rospy
+from cv_bridge import CvBridge
+from sensor_msgs.msg import Image
+from stereo_msgs.msg import DisparityImage
+
+# ROS Setup
+rospy.init_node("Titania")
+image_l_pub = rospy.Publisher('titania/image_left', Image, queue_size=1)
+image_r_pub = rospy.Publisher('titania/image_right', Image, queue_size=1)
+disparity_pub = rospy.Publisher('titania/disparity', DisparityImage, queue_size=1)
+
+# Image Conversion Setup
+bridge = CvBridge()
 
 
 # Define information about the Titania camera
@@ -81,3 +94,7 @@ if (ret):
 
             # Find the disparity from matcher
             disparity = match_result.disparity
+
+            # Convert opencv images to ros msgs
+            ros_image_left = bridge.cv2_to_imgmsg(rect_image_pair.left, encoding="bgr8")
+            ros_image_right = bridge.cv2_to_imgmsg(rect_image_pair.right, encoding="bgr8")
