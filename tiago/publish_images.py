@@ -30,6 +30,11 @@ test_folder = script_path
 data_folder = os.path.join(script_path, "test", "data")
 left_yaml = os.path.join(data_folder, "titania_left.yaml")
 right_yaml = os.path.join(data_folder, "titania_right.yaml")
+print("script path: " + script_path)
+print("test folder: " + test_folder)
+print("data folder : " + data_folder)
+print("left yaml: " + left_yaml)
+print("right yaml: " + right_yaml)
 out_ply = os.path.join(test_folder, "titania_out.ply")
 
 # Define parameters for read process
