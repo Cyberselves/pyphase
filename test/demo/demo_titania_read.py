@@ -14,9 +14,9 @@ import phase.pyphase as phase
 
 # Define information about the Titania camera
 # Each camera has unique camera_name, left_serial, and right_serial
-camera_name = "746974616e24317"
-left_serial = "40098272"
-right_serial = "40098282"
+camera_name = "746974616e24321"
+left_serial = "40146993"
+right_serial = "40146996"
 device_type = phase.stereocamera.CameraDeviceType.DEVICE_TYPE_TITANIA
 interface_type = phase.stereocamera.CameraInterfaceType.INTERFACE_TYPE_USB
 
@@ -32,7 +32,7 @@ out_ply = os.path.join(test_folder, "titania_out.ply")
 # Define parameters for read process
 downsample_factor = 1.0
 display_downsample = 0.25
-exposure_value = 10000
+exposure_value = 20000
 
 # Check for I3DRSGM license
 license_valid = phase.stereomatcher.StereoI3DRSGM().isLicenseValid()
@@ -72,7 +72,7 @@ if (ret):
     # Set camera exposure value
     tinaniaCam.setExposure(exposure_value)
     print("Running camera capture...")
-    while not tinaniaCam.isConnected():
+    while tinaniaCam.isConnected():
         read_result = tinaniaCam.read()
         if read_result.valid:
             # Rectify stereo image pair
