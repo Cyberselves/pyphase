@@ -22,7 +22,7 @@ camera_name = "746974616e24321"
 left_serial = "40146993"
 right_serial = "40146996"
 device_type = phase.stereocamera.CameraDeviceType.DEVICE_TYPE_TITANIA
-interface_type = phase.stereocamera.CamerteaInrfaceType.INTERFACE_TYPE_USB
+interface_type = phase.stereocamera.CameraInterfaceType.INTERFACE_TYPE_USB
 
 # Define calibration files
 script_path = os.path.dirname(os.path.realpath(__file__))
