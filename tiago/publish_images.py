@@ -26,8 +26,8 @@ interface_type = phase.stereocamera.CameraInterfaceType.INTERFACE_TYPE_USB
 
 # Define calibration files
 script_path = os.path.dirname(os.path.realpath(__file__))
-test_folder = script_path
-data_folder = os.path.join(script_path, "test", "data")
+test_folder = os.path.join(script_path, "..", "test")
+data_folder = os.path.join(test_folder, "data")
 left_yaml = os.path.join(data_folder, "titania_left.yaml")
 right_yaml = os.path.join(data_folder, "titania_right.yaml")
 print("script path: " + script_path)
