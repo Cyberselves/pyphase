@@ -101,5 +101,7 @@ if (ret):
             disparity = match_result.disparity
 
             # Convert opencv images to ros msgs
-            ros_image_left = bridge.cv2_to_imgmsg(rect_image_pair.left, encoding="bgr8")
-            ros_image_right = bridge.cv2_to_imgmsg(rect_image_pair.right, encoding="bgr8")
+            ros_image_left = bridge.cv2_to_imgmsg(rect_image_pair.left, encoding="passthrough")
+            ros_image_right = bridge.cv2_to_imgmsg(rect_image_pair.right, encoding="passthrough")
+
+            
