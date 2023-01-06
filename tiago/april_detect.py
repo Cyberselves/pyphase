@@ -1,8 +1,20 @@
 import rospy
+import apriltag
+import cv2
+from cv_bridge import CvBridge, CvBridgeError
 from sensor_msgs.msg import Image
 
+detector = apriltag.Detector()
+bridge = CvBridge()
+
 def image_callback_l(msg):
-  print("left image recieved")
+  try:
+    cv_image_l = bridge.imgmsg_to_cv2(msg.data, "bgr8")
+  except CvBridgeError as e:
+    print(e)
+
+  cv2.imshow("Image window", cv_image_l)
+  cv2.waitKey(1)
 
 def image_callback_r(msg):
   print("right image recieved")
