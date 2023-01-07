@@ -2,14 +2,28 @@ import rospy
 import time
 import apriltag
 import cv2
+import numpy
 from cv_bridge import CvBridge, CvBridgeError
 from sensor_msgs.msg import Image
 
 class april_detector:
 
     def __init__(self):
-        options = apriltag.DetectorOptions(families="tag36h11")
+        options = apriltag.DetectorOptions(families="tag36h11",
+                                           border=1,
+                                           nthreads=4,
+                                           quad_decimate=1.0,
+                                           quad_blur=0.0,
+                                           refine_edges=True,
+                                           refine_decode=False,
+                                           refine_pose=False,
+                                           debug=False,
+                                           quad_contours=True)
+        
+        self.tag_size=1
+        self.z_sign=1
         self.detector = apriltag.Detector(options)
+        
         self.bridge = CvBridge()
 
         rospy.init_node('april_detector')
@@ -26,6 +40,7 @@ class april_detector:
         self.grayscale_l = None
         self.grayscale_r = None
 
+        # This is Gazebo Stereo Params
         self.camera_params_l = (56.424106434582825, 56.424106434582825, 320.5, 240.5)
         self.camera_params_r = (56.424106434582825, 56.424106434582825, 320.5, 240.5)
 
@@ -53,8 +68,11 @@ class april_detector:
         
         self.draw_tags(self.cv_image_r, results)
         
-        pose = self.detector.detection_pose(results, self.camera_params_r, tag_size=1, z_sign=1)
+        pose, e0, e1 = self.detector.detection_pose(results[0], self.camera_params_r, self.tag_size, self.z_sign)
         print(pose)
+        
+        #self.draw_box(self.cv_image_r, self.camera_params_r, pose)
+        self.draw_axes(self.cv_image_r, self.camera_params_r, self.tag_size, pose, results[0].center)
 
     def draw_tags(self, img, tags):
         # loop over the AprilTag detection results
@@ -76,7 +94,64 @@ class april_detector:
                 # draw the center (x, y)-coordinates of the AprilTag
                 (cX, cY) = (int(tag.center[0]), int(tag.center[1]))
                 cv2.circle(img, (cX, cY), 5, (0, 0, 255), -1)
+                
+    def draw_box(self, img, camera_params, tag_pose):
+        opoints = numpy.array([-1, -1, 0,
+                                1, -1, 0,
+                                1,  1, 0,
+                                -1,  1, 0,
+                                -1, -1, -2*self.z_sign,
+                                1, -1, -2*self.z_sign,
+                                1,  1, -2*self.z_sign,
+                                -1,  1, -2*self.z_sign,
+        ]).reshape(-1, 1, 3) * 0.5*self.tag_size
 
+        edges = numpy.array([0, 1, 1, 2, 2, 3, 3, 0,
+                             0, 4, 1, 5, 2, 6, 3, 7,
+                             4, 5, 5, 6, 6, 7, 7, 4
+        ]).reshape(-1, 2)
+
+        fx, fy, cx, cy = camera_params
+
+        K = numpy.array([fx, 0, cx, 0, fy, cy, 0, 0, 1]).reshape(3, 3)
+
+        rvec, _ = cv2.Rodrigues(tag_pose[:3,:3])
+        tvec = tag_pose[:3, 3]
+
+        dcoeffs = numpy.zeros(5)
+
+        ipoints, _ = cv2.projectPoints(opoints, rvec, tvec, K, dcoeffs)
+
+        ipoints = numpy.round(ipoints).astype(int)
+
+        ipoints = [tuple(pt) for pt in ipoints.reshape(-1, 2)]
+
+        for i, j in edges:
+                cv2.line(img, ipoints[i], ipoints[j], (0, 255, 0), 1, 16)
+                
+    def draw_axes(self, img, camera_params, tag_size, tag_pose, center):
+    
+        fx, fy, cx, cy = camera_params
+        K = numpy.array([fx, 0, cx, 0, fy, cy, 0, 0, 1]).reshape(3, 3)
+
+        rvec, _ = cv2.Rodrigues(tag_pose[:3,:3])
+        tvec = tag_pose[:3, 3]
+
+        dcoeffs = numpy.zeros(5)
+
+        opoints = numpy.float32([[1,0,0],
+                                 [0,-1,0],
+                                 [0,0,-1]]).reshape(-1,3) * tag_size
+
+        ipoints, _ = cv2.projectPoints(opoints, rvec, tvec, K, dcoeffs)
+        ipoints = numpy.round(ipoints).astype(int)
+
+        center = numpy.round(center).astype(int)
+        center = tuple(center.ravel())
+
+        cv2.line(img, center, tuple(ipoints[0].ravel()), (0,0,255), 2)
+        cv2.line(img, center, tuple(ipoints[1].ravel()), (0,255,0), 2)
+        cv2.line(img, center, tuple(ipoints[2].ravel()), (255,0,0), 2)
 
     def loop(self):
         while not rospy.is_shutdown():
