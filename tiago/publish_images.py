@@ -101,8 +101,8 @@ if (ret):
             disparity = match_result.disparity
 
             # Convert opencv images to ros msgs
-            ros_image_left = bridge.cv2_to_imgmsg(rect_img_left, encoding="passthrough")
-            ros_image_right = bridge.cv2_to_imgmsg(rect_img_right, encoding="passthrough")
+            ros_image_left = bridge.cv2_to_imgmsg(rect_img_left, encoding="8UCV")
+            ros_image_right = bridge.cv2_to_imgmsg(rect_img_right, encoding="8UCV")
 
             # Publish images to ros
             image_l_pub.publish(ros_image_left)

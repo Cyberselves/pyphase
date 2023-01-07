@@ -26,6 +26,9 @@ class april_detector:
         self.grayscale_l = None
         self.grayscale_r = None
 
+        self.camera_params_l = (56.424106434582825, 56.424106434582825, 320.5, 240.5)
+        self.camera_params_r = (56.424106434582825, 56.424106434582825, 320.5, 240.5)
+
     def image_callback_l(self, msg):
         try:
             self.cv_image_l = self.bridge.imgmsg_to_cv2(msg, "bgr8")
@@ -51,7 +54,8 @@ class april_detector:
         self.draw_tags(self.cv_image_r, results)
         
         pose = self.detector.detection_pose(results, self.camera_params_r, tag_size=1, z_sign=1)
-        
+        print(pose)
+
     def draw_tags(self, img, tags):
         # loop over the AprilTag detection results
         for tag in tags:
