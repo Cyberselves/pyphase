@@ -9,6 +9,7 @@ from cv_bridge import CvBridge, CvBridgeError
 
 # Apriltag Imports
 import apriltag
+from tf.transformations import quaternion_about_axis
 
 # Phase Imports
 import phase.pyphase as phase
@@ -17,6 +18,7 @@ import phase.pyphase as phase
 import rospy
 from sensor_msgs.msg import CompressedImage
 from stereo_msgs.msg import DisparityImage
+from geometetry_msgs.msg import Transform, Quaternion
 
 class titania_node:
 
@@ -36,15 +38,19 @@ class titania_node:
             refine_pose=True,
             debug=False,
             quad_contours=True)
-        self.tag_size = 0.08
+        self.tag_size = 0.0635
         self.z_sign = 1
         self.detector = apriltag.Detector(options)
+        self.april_transform_l = Transform()
+        self.april_transform_r = Transform()
 
         # Initialise ROS
         rospy.init_node("Titania")
         self.image_l_pub = rospy.Publisher('titania/left/image_raw/compressed', CompressedImage, queue_size=1)
         self.image_r_pub = rospy.Publisher('titania/right/image_raw/compressed', CompressedImage, queue_size=1)
         self.image_disp_pub = rospy.Publisher('titania/depth/image_raw', DisparityImage, queue_size=1)
+        self.left_transform_pub = rospy.Publisher("titania/left/april_transform", Transform, queue_size=1)
+        self.right_transform_pub = rospy.Publisher("titania/right/april_transform", Transform, queue_size=1)
 
         # Image Conversion Setup
         self.bridge = CvBridge()
@@ -64,7 +70,6 @@ class titania_node:
         data_folder = os.path.join(test_folder, "data")
         self.left_yaml = os.path.join(data_folder, "titania_left.yaml")
         self.right_yaml = os.path.join(data_folder, "titania_right.yaml")
-        out_ply = os.path.join(test_folder, "titania_out.ply")
 
         # Define parameters for read process
         self.downsample_factor = 1.0
@@ -189,7 +194,25 @@ class titania_node:
                     # Calculate pose of tags
                     left_tag_pose, l_e0, r_e0 = self.detector.detection_pose(left_tags[0], self.camera_params_l, self.tag_size, self.z_sign)
                     right_tag_pose, r_e0, r_e1 = self.detector.detection_pose(right_tags[0], self.camera_params_r, self.tag_size, self.z_sign)
-                    #print(left_tag_pose)
+
+                    # Calculate rvec and tvec for each tag pose
+                    rvec_l, _ = cv2.Rodrigues(left_tag_pose[:3, :3])
+                    tvec_l = left_tag_pose[:3, 3]
+                    rvec_r, _ = cv2.Rodrigues(right_tag_pose[:3, :3])
+                    tvec_r = right_tag_pose[:3, 3]
+
+                    # Convert rvec to quat and populate msg
+                    self.april_transform_l.translation.x = tvec_l[0][0]
+                    self.april_transform_l.translation.y = tvec_l[0][1]
+                    self.april_transform_l.translation.z = tvec_l[0][2]
+                    angle = cv2.norm(rvec_l[0])
+                    self.april_transform_l.rotation = Quaternion(*quaternion_about_axis(angle, rvec_l[0]))
+
+                    self.april_transform_r.translation.x = tvec_l[0][0]
+                    self.april_transform_r.translation.y = tvec_l[0][1]
+                    self.april_transform_r.translation.z = tvec_l[0][2]
+                    angle = cv2.norm(rvec_r[0])
+                    self.april_transform_r.rotation = Quaternion(*quaternion_about_axis(angle, rvec_r[0]))
 
                     # Convert opencv images to ros msgs
                     ros_image_l = self.bridge.cv2_to_compressed_imgmsg(rect_image_pair.left)
@@ -197,13 +220,15 @@ class titania_node:
                     if match_result.valid:
                         ros_image_disp = self.bridge.cv2_to_imgmsg(disparity, encoding="passthrough")
 
-                    # Publish images to ros
+                    # Publish to ros
                     self.image_l_pub.publish(ros_image_l)
                     self.image_r_pub.publish(ros_image_r)
                     if match_result.valid:
                         disparity_msg = DisparityImage()
                         disparity_msg.image = ros_image_disp
                         self.image_disp_pub.publish(disparity_msg)
+                    self.left_transform_pub.publish(self.april_transform_l)
+                    self.right_transform_pub.publish(self.april_transform_r)
 
                     # Annotate and Display images only if debug is true
                     if self.debug:
