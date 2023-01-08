@@ -152,7 +152,7 @@ class titania_node:
         if (connected):
             # Start capturing images and set exposure value
             self.titaniaCam.startCapture()
-            self.tinaniaCam.setExposure(self.exposure_value)
+            self.titaniaCam.setExposure(self.exposure_value)
 
             #Start Loop
             while not rospy.is_shutdown() and self.titaniaCam.isConnected:
@@ -166,7 +166,8 @@ class titania_node:
 
                     # Get disparity from matched images
                     if match_result.valid:
-                        disparity_image = match_result.disparity
+                        disparity = match_result.disparity
+                        disparity_image = phase.normaliseDisparity(disparity)
                     else:
                         print("Failed to compute match, no disparity image created")
 
