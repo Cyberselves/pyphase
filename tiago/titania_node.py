@@ -209,11 +209,12 @@ class titania_node:
                         # Calculate rvec and tvec for tag pose
                         rvec_l, _ = cv2.Rodrigues(left_tag_pose[:3, :3])
                         tvec_l = left_tag_pose[:3, 3]
+                        print(tvec_l)
 
                         # Convert rvec to quat and populate msg
-                        self.april_transform_l.translation.x = tvec_l[0][0]
-                        self.april_transform_l.translation.y = tvec_l[0][1]
-                        self.april_transform_l.translation.z = tvec_l[0][2]
+                        self.april_transform_l.translation.x = tvec_l[0]
+                        self.april_transform_l.translation.y = tvec_l[1]
+                        self.april_transform_l.translation.z = tvec_l[2]
                         angle = cv2.norm(rvec_l[0])
                         self.april_transform_l.rotation = Quaternion(*quaternion_about_axis(angle, rvec_l[0]))
 
@@ -226,9 +227,9 @@ class titania_node:
                         tvec_r = right_tag_pose[:3, 3]
 
                         # Convert rvec to quat and populate msg
-                        self.april_transform_r.translation.x = tvec_r[0][0]
-                        self.april_transform_r.translation.y = tvec_r[0][1]
-                        self.april_transform_r.translation.z = tvec_r[0][2]
+                        self.april_transform_r.translation.x = tvec_r[0]
+                        self.april_transform_r.translation.y = tvec_r[1]
+                        self.april_transform_r.translation.z = tvec_r[2]
                         angle = cv2.norm(rvec_r[0])
                         self.april_transform_r.rotation = Quaternion(*quaternion_about_axis(angle, rvec_r[0]))
 
@@ -281,5 +282,5 @@ class titania_node:
         cv2.destroyAllWindows()
 
 if __name__ == "__main__":
-    main = titania_node(debug=True)
+    main = titania_node(debug=False)
     main.loop()
