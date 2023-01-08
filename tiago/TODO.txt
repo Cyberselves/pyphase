@@ -1,0 +1,2 @@
+Subscribe to camera_info to extract camera_params
+
