@@ -61,7 +61,7 @@ class titania_node:
 
         # Define parameters for read process
         self.downsample_factor = 1.0
-        self.display_downsample = 0.25
+        self.display_downsample = 1.0
         self.exposure_value = 20000
 
         # Check for I3DRSGM license
@@ -171,9 +171,13 @@ class titania_node:
                     else:
                         print("Failed to compute match, no disparity image created")
 
+                    # Convert Images to grayscale for apriltag detection
+                    grayscale_l = cv2.cvtColor(rect_image_pair.left, cv2.COLOR_BGR2GRAY)
+                    #grayscale_r = cv2.cvtColor(rect_image_pair.right, cv2.COLOR_BGR2GRAY)
+
                     # Detect Apriltags
-                    left_tags = self.detector.detect(rect_image_pair.left)
-                    #right_tags = self.detector.detect(rect_image_pair.right)
+                    left_tags = self.detector.detect(grayscale_l)
+                    #right_tags = self.detector.detect(grayscale_r)
 
                     # Draw apriltags onto image for debug
                     self.draw_tags(rect_image_pair.left, left_tags)
