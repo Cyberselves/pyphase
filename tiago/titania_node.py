@@ -18,7 +18,7 @@ import phase.pyphase as phase
 import rospy
 from sensor_msgs.msg import CompressedImage
 from stereo_msgs.msg import DisparityImage
-from geometetry_msgs.msg import Transform, Quaternion
+from geometry_msgs.msg import Transform, Quaternion
 
 class titania_node:
 
