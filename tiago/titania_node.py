@@ -15,7 +15,7 @@ import phase.pyphase as phase
 
 # ROS Imports
 import rospy
-from sensor_msgs.msg import Image
+from sensor_msgs.msg import CompressedImage
 from stereo_msgs.msg import DisparityImage
 
 class titania_node:
@@ -42,7 +42,12 @@ class titania_node:
 
         # Initialise ROS
         rospy.init_node("Titania")
-        # DEFINE PUBS HERE #################################################
+        self.image_l_pub = rospy.Publisher('titania/left/image_raw/compressed', CompressedImage, queue_size=1)
+        self.image_r_pub = rospy.Publisher('titania/right/image_raw/compressed', CompressedImage, queue_size=1)
+        self.disparity_pub = rospy.Publisher('titania/depth/image_raw', DisparityImage, queue_size=1)
+
+        # Image Conversion Setup
+        self.bridge = CvBridge()
 
         # Initialise Titania
         # Define information about the Titania camera
@@ -185,6 +190,14 @@ class titania_node:
                     left_tag_pose, l_e0, l_e1 = self.detector.detection_pose(left_tags[0], self.camera_params_l, self.tag_size, self.z_sign)
                     right_tag_pose, r_e0, r_e1 = self.detector.detection_pose(right_tags[0], self.camera_params_r, self.tag_size, self.z_sign)
                     #print(left_tag_pose)
+
+                    # Convert opencv images to ros msgs
+                    ros_image_l = self.bridge.cv2_to_compressed_imgmsg(rect_image_pair.left, encoding="bgr8")
+                    ros_image_r = self.bridge.cv2_to_compressed_imgmsg(rect_image_pair.right, encoding="bgr8")
+
+                    # Publish images to ros
+                    self.image_l_pub.publish(ros_image_l)
+                    self.image_r_pub.publish(ros_image_r)
 
                     if self.debug:
 
