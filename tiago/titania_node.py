@@ -44,7 +44,7 @@ class titania_node:
         rospy.init_node("Titania")
         self.image_l_pub = rospy.Publisher('titania/left/image_raw/compressed', CompressedImage, queue_size=1)
         self.image_r_pub = rospy.Publisher('titania/right/image_raw/compressed', CompressedImage, queue_size=1)
-        self.disparity_pub = rospy.Publisher('titania/depth/image_raw', DisparityImage, queue_size=1)
+        self.image_disp_pub = rospy.Publisher('titania/depth/image_raw', DisparityImage, queue_size=1)
 
         # Image Conversion Setup
         self.bridge = CvBridge()
@@ -187,19 +187,28 @@ class titania_node:
                     right_tags = self.detector.detect(grayscale_r)
 
                     # Calculate pose of tags
-                    left_tag_pose, l_e0, l_e1 = self.detector.detection_pose(left_tags[0], self.camera_params_l, self.tag_size, self.z_sign)
+                    left_tag_pose, l_e0, r_e0 = self.detector.detection_pose(left_tags[0], self.camera_params_l, self.tag_size, self.z_sign)
                     right_tag_pose, r_e0, r_e1 = self.detector.detection_pose(right_tags[0], self.camera_params_r, self.tag_size, self.z_sign)
                     #print(left_tag_pose)
 
                     # Convert opencv images to ros msgs
-                    ros_image_l = self.bridge.cv2_to_compressed_imgmsg(rect_image_pair.left, encoding="bgr8")
-                    ros_image_r = self.bridge.cv2_to_compressed_imgmsg(rect_image_pair.right, encoding="bgr8")
+                    ros_image_l = self.bridge.cv2_to_compressed_imgmsg(rect_image_pair.left)
+                    ros_image_r = self.bridge.cv2_to_compressed_imgmsg(rect_image_pair.right)
+                    if match_result.valid:
+                        ros_image_disp = self.bridge.cv2_to_imgmsg(disparity, encoding="passthrough")
 
                     # Publish images to ros
                     self.image_l_pub.publish(ros_image_l)
                     self.image_r_pub.publish(ros_image_r)
+                    if match_result.valid:
+                        disparity_msg = DisparityImage()
+                        disparity_msg.image = ros_image_disp
+                        self.image_disp_pub.publish(disparity_msg)
 
+                    # Annotate and Display images only if debug is true
                     if self.debug:
+                        # Print values for debug
+                        print("Left Tag Pose: ", left_tag_pose)
 
                         # Copy image for annotation
                         annotate_l = rect_image_pair.left.copy()
