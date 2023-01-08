@@ -191,28 +191,46 @@ class titania_node:
                     left_tags = self.detector.detect(grayscale_l)
                     right_tags = self.detector.detect(grayscale_r)
 
-                    # Calculate pose of tags
-                    left_tag_pose, l_e0, r_e0 = self.detector.detection_pose(left_tags[0], self.camera_params_l, self.tag_size, self.z_sign)
-                    right_tag_pose, r_e0, r_e1 = self.detector.detection_pose(right_tags[0], self.camera_params_r, self.tag_size, self.z_sign)
+                    # Find if any tags are detected
+                    if len(left_tags) > 0:
+                        left_tag_found = True
+                    else:
+                        left_tag_found = False
 
-                    # Calculate rvec and tvec for each tag pose
-                    rvec_l, _ = cv2.Rodrigues(left_tag_pose[:3, :3])
-                    tvec_l = left_tag_pose[:3, 3]
-                    rvec_r, _ = cv2.Rodrigues(right_tag_pose[:3, :3])
-                    tvec_r = right_tag_pose[:3, 3]
+                    if len(right_tags) > 0:
+                        right_tag_found = True
+                    else:
+                        right_tag_found = False
 
-                    # Convert rvec to quat and populate msg
-                    self.april_transform_l.translation.x = tvec_l[0][0]
-                    self.april_transform_l.translation.y = tvec_l[0][1]
-                    self.april_transform_l.translation.z = tvec_l[0][2]
-                    angle = cv2.norm(rvec_l[0])
-                    self.april_transform_l.rotation = Quaternion(*quaternion_about_axis(angle, rvec_l[0]))
+                    if left_tag_found:
+                        # Calculate pose of tag
+                        left_tag_pose, l_e0, r_e0 = self.detector.detection_pose(left_tags[0], self.camera_params_l, self.tag_size, self.z_sign)
 
-                    self.april_transform_r.translation.x = tvec_l[0][0]
-                    self.april_transform_r.translation.y = tvec_l[0][1]
-                    self.april_transform_r.translation.z = tvec_l[0][2]
-                    angle = cv2.norm(rvec_r[0])
-                    self.april_transform_r.rotation = Quaternion(*quaternion_about_axis(angle, rvec_r[0]))
+                        # Calculate rvec and tvec for tag pose
+                        rvec_l, _ = cv2.Rodrigues(left_tag_pose[:3, :3])
+                        tvec_l = left_tag_pose[:3, 3]
+
+                        # Convert rvec to quat and populate msg
+                        self.april_transform_l.translation.x = tvec_l[0][0]
+                        self.april_transform_l.translation.y = tvec_l[0][1]
+                        self.april_transform_l.translation.z = tvec_l[0][2]
+                        angle = cv2.norm(rvec_l[0])
+                        self.april_transform_l.rotation = Quaternion(*quaternion_about_axis(angle, rvec_l[0]))
+
+                    if right_tag_found:
+                        # Calculate pose of tag
+                        right_tag_pose, r_e0, r_e1 = self.detector.detection_pose(right_tags[0], self.camera_params_r, self.tag_size, self.z_sign)
+
+                        # Calculate rvec and tvec for each tag pose
+                        rvec_r, _ = cv2.Rodrigues(right_tag_pose[:3, :3])
+                        tvec_r = right_tag_pose[:3, 3]
+
+                        # Convert rvec to quat and populate msg
+                        self.april_transform_r.translation.x = tvec_r[0][0]
+                        self.april_transform_r.translation.y = tvec_r[0][1]
+                        self.april_transform_r.translation.z = tvec_r[0][2]
+                        angle = cv2.norm(rvec_r[0])
+                        self.april_transform_r.rotation = Quaternion(*quaternion_about_axis(angle, rvec_r[0]))
 
                     # Convert opencv images to ros msgs
                     ros_image_l = self.bridge.cv2_to_compressed_imgmsg(rect_image_pair.left)
@@ -227,8 +245,11 @@ class titania_node:
                         disparity_msg = DisparityImage()
                         disparity_msg.image = ros_image_disp
                         self.image_disp_pub.publish(disparity_msg)
-                    self.left_transform_pub.publish(self.april_transform_l)
-                    self.right_transform_pub.publish(self.april_transform_r)
+
+                    if left_tag_found:
+                        self.left_transform_pub.publish(self.april_transform_l)
+                    if right_tag_found:
+                        self.right_transform_pub.publish(self.april_transform_r)
 
                     # Annotate and Display images only if debug is true
                     if self.debug:
@@ -240,13 +261,14 @@ class titania_node:
                         annotate_r = rect_image_pair.right.copy()
 
                         # Draw apriltags onto image for debug
-                        self.draw_tags(annotate_l, left_tags)
-                        self.draw_tags(annotate_r, right_tags)
+                        if left_tag_found:
+                            self.draw_tags(annotate_l, left_tags)
+                            self.draw_axes(annotate_l, self.camera_params_l, self.tag_size, left_tag_pose, left_tags[0].center)
+                        if right_tag_found:
+                            self.draw_tags(annotate_r, right_tags)
+                            self.draw_axes(annotate_r, self.camera_params_r, self.tag_size, right_tag_pose, right_tags[0].center)
 
-                        # Draw axes onto tag to represent pose in image for debug
-                        self.draw_axes(annotate_l, self.camera_params_l, self.tag_size, left_tag_pose, left_tags[0].center)
-                        self.draw_axes(annotate_r, self.camera_params_r, self.tag_size, right_tag_pose, right_tags[0].center)
-
+                        # Display Images
                         cv2.imshow("Left", annotate_l)
                         cv2.imshow("Right", annotate_r)
                         cv2.imshow("Disparity", disparity_image)
