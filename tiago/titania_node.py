@@ -34,7 +34,7 @@ class titania_node:
             refine_pose=True,
             debug=False,
             quad_contours=True)
-        self.tag_size = 1
+        self.tag_size = 0.08
         self.z_sign = 1
         self.detector = apriltag.Detector(options)
 
@@ -171,7 +171,9 @@ class titania_node:
                     else:
                         print("Failed to compute match, no disparity image created")
 
-                    # Convert Images to grayscale for apriltag detection
+                    annotate_l = rect_image_pair.left.copy() 
+
+                   # Convert Images to grayscale for apriltag detection
                     grayscale_l = cv2.cvtColor(rect_image_pair.left, cv2.COLOR_BGR2GRAY)
                     #grayscale_r = cv2.cvtColor(rect_image_pair.right, cv2.COLOR_BGR2GRAY)
 
@@ -180,22 +182,22 @@ class titania_node:
                     #right_tags = self.detector.detect(grayscale_r)
 
                     # Draw apriltags onto image for debug
-                    self.draw_tags(rect_image_pair.left, left_tags)
+                    self.draw_tags(annotate_l, left_tags)
                     #self.draw_tags(rect_image_pair.right, right_tags)
 
                     # Calculate pose of tags
-                    left_tag_pose, l_e0, l_e1 = self.detector.detection_pose(left_tags[0], self.camera_params_l, self.tag_size, self.z_sign)
+                    #left_tag_pose, l_e0, l_e1 = self.detector.detection_pose(left_tags[0], self.camera_params_l, self.tag_size, self.z_sign)
                     #right_tag_pose, r_e0, r_e1 = self.detector.detection_pose(right_tags[0], self.camera_params_r, self.tag_size, self.z_sign)
-                    print(left_tag_pose)
+                    #print(left_tag_pose)
 
                     # Draw axes onto tag to represent pose in image for debug
-                    self.draw_axes(rect_image_pair.left, self.camera_params_l, self.tag_size, left_tag_pose, left_tags[0].center)
+                    #self.draw_axes(rect_image_pair.left, self.camera_params_l, self.tag_size, left_tag_pose, left_tags[0].center)
                     #self.draw_axes(rect_image_pair.right, self.camera_params_r, self.tag_size, right_tag_pose, right_tags[0].center)
 
-                    cv2.imshow("Left", rect_image_pair.left)
+                    cv2.imshow("Left", annotate_l)
                     cv2.imshow("Right", rect_image_pair.right)
                     cv2.imshow("Disparity", disparity_image)
-                    cv2.waitKey(1)
+                    cv2.waitKey(100)
 
                 else:
                     self.titaniaCam.disconnect()
