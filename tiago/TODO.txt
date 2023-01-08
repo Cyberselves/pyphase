@@ -1,2 +1,3 @@
 Subscribe to camera_info to extract camera_params
 
+Currently no support for multiple tags (we take first element from detector results)
