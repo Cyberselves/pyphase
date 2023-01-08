@@ -16,20 +16,20 @@ class april_detector:
                                            quad_blur=0.0,
                                            refine_edges=True,
                                            refine_decode=False,
-                                           refine_pose=False,
+                                           refine_pose=True,
                                            debug=False,
                                            quad_contours=True)
-        
+
         self.tag_size=1
         self.z_sign=1
         self.detector = apriltag.Detector(options)
-        
+
         self.bridge = CvBridge()
 
         rospy.init_node('april_detector')
 
-        self.image_sub_l = rospy.Subscriber('/stereo_cams/left/image_raw', Image, self.image_callback_l)
-        self.image_sub_r = rospy.Subscriber('/stereo_cams/right/image_raw', Image, self.image_callback_r)
+        self.image_sub_l = rospy.Subscriber('/titania/left/image_raw', Image, self.image_callback_l)
+        self.image_sub_r = rospy.Subscriber('/titania/right/image_raw', Image, self.image_callback_r)
 
         self.cv_image_l = None
         self.cv_image_r = None
@@ -41,8 +41,12 @@ class april_detector:
         self.grayscale_r = None
 
         # This is Gazebo Stereo Params
-        self.camera_params_l = (56.424106434582825, 56.424106434582825, 320.5, 240.5)
-        self.camera_params_r = (56.424106434582825, 56.424106434582825, 320.5, 240.5)
+        # self.camera_params_l = (56.424106434582825, 56.424106434582825, 320.5, 240.5)
+        # self.camera_params_r = (56.424106434582825, 56.424106434582825, 320.5, 240.5)
+
+        # this is Titania Params
+        self.camera_params_l = (1744.9, 1745.47, 931.505, 581.185)
+        self.camera_params_r = (1744.12, 1744.4, 962.712, 587.003)
 
     def image_callback_l(self, msg):
         try:
@@ -50,27 +54,25 @@ class april_detector:
             self.left_image_received = True
         except CvBridgeError as e:
             print(e)
-            
-        #self.grayscale_l = cv2.cvtColor(self.cv_image_l, cv2.COLOR_BGR2GRAY)
+
+       #self.grayscale_l = cv2.cvtColor(self.cv_image_l, cv2.COLOR_BGR2GRAY)
         #results = self.detector.detect(self.grayscale_l)
-        
         #self.draw_tags(self.cv_image_l, results)
-        
     def image_callback_r(self, msg):
         try:
             self.cv_image_r = self.bridge.imgmsg_to_cv2(msg, "bgr8")
             self.right_image_received = True
         except CvBridgeError as e:
             print(e)
-            
+
         self.grayscale_r = cv2.cvtColor(self.cv_image_r, cv2.COLOR_BGR2GRAY)
         results = self.detector.detect(self.grayscale_r)
-        
+
         self.draw_tags(self.cv_image_r, results)
-        
+
         pose, e0, e1 = self.detector.detection_pose(results[0], self.camera_params_r, self.tag_size, self.z_sign)
         print(pose)
-        
+
         #self.draw_box(self.cv_image_r, self.camera_params_r, pose)
         self.draw_axes(self.cv_image_r, self.camera_params_r, self.tag_size, pose, results[0].center)
 
@@ -84,17 +86,17 @@ class april_detector:
                 ptC = (int(ptC[0]), int(ptC[1]))
                 ptD = (int(ptD[0]), int(ptD[1]))
                 ptA = (int(ptA[0]), int(ptA[1]))
-                
+
                 # draw the bounding box of the AprilTag detection
                 cv2.line(img, ptA, ptB, (0, 255, 0), 2)
                 cv2.line(img, ptB, ptC, (0, 255, 0), 2)
                 cv2.line(img, ptC, ptD, (0, 255, 0), 2)
                 cv2.line(img, ptD, ptA, (0, 255, 0), 2)
-                
+
                 # draw the center (x, y)-coordinates of the AprilTag
                 (cX, cY) = (int(tag.center[0]), int(tag.center[1]))
                 cv2.circle(img, (cX, cY), 5, (0, 0, 255), -1)
-                
+
     def draw_box(self, img, camera_params, tag_pose):
         opoints = numpy.array([-1, -1, 0,
                                 1, -1, 0,
@@ -128,9 +130,9 @@ class april_detector:
 
         for i, j in edges:
                 cv2.line(img, ipoints[i], ipoints[j], (0, 255, 0), 1, 16)
-                
+
     def draw_axes(self, img, camera_params, tag_size, tag_pose, center):
-    
+
         fx, fy, cx, cy = camera_params
         K = numpy.array([fx, 0, cx, 0, fy, cy, 0, 0, 1]).reshape(3, 3)
 
