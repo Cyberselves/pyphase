@@ -20,6 +20,8 @@ from sensor_msgs.msg import CompressedImage
 from stereo_msgs.msg import DisparityImage
 from geometry_msgs.msg import Transform, Quaternion
 
+debug = False
+
 class titania_node:
 
     def __init__(self, debug=False):
@@ -49,6 +51,7 @@ class titania_node:
         self.image_l_pub = rospy.Publisher('titania/left/image_raw/compressed', CompressedImage, queue_size=1)
         self.image_r_pub = rospy.Publisher('titania/right/image_raw/compressed', CompressedImage, queue_size=1)
         self.image_disp_pub = rospy.Publisher('titania/depth/image_raw', DisparityImage, queue_size=1)
+        self.image_disp_pub_comp = rospy.Publisher('titania/depth/image_raw/compressed', CompressedImage, queue_size=1)
         self.left_transform_pub = rospy.Publisher("titania/left/april_transform", Transform, queue_size=1)
         self.right_transform_pub = rospy.Publisher("titania/right/april_transform", Transform, queue_size=1)
 
@@ -180,6 +183,7 @@ class titania_node:
                     if match_result.valid:
                         disparity = match_result.disparity
                         disparity_image = phase.normaliseDisparity(disparity)
+                        #depth_image = phase.disparity2depth(match_result.disparity, self.calibration.getQ())
                     else:
                         print("Failed to compute match, no disparity image created")
 
@@ -194,11 +198,13 @@ class titania_node:
                     # Find if any tags are detected
                     if len(left_tags) > 0:
                         left_tag_found = True
+                        print("Left Tag Detected")
                     else:
                         left_tag_found = False
 
                     if len(right_tags) > 0:
                         right_tag_found = True
+                        print("Right Tag Detected")
                     else:
                         right_tag_found = False
 
@@ -234,18 +240,20 @@ class titania_node:
                         self.april_transform_r.rotation = Quaternion(*quaternion_about_axis(angle, rvec_r[0]))
 
                     # Convert opencv images to ros msgs
-                    ros_image_l = self.bridge.cv2_to_compressed_imgmsg(rect_image_pair.left)
-                    ros_image_r = self.bridge.cv2_to_compressed_imgmsg(rect_image_pair.right)
+                    #ros_image_l = self.bridge.cv2_to_compressed_imgmsg(rect_image_pair.left)
+                    #ros_image_r = self.bridge.cv2_to_compressed_imgmsg(rect_image_pair.right)
                     if match_result.valid:
-                        ros_image_disp = self.bridge.cv2_to_imgmsg(disparity, encoding="passthrough")
+                        ros_image_disp_comp = self.bridge.cv2_to_compressed_imgmsg(disparity_image)
+                        #ros_image_disp = self.bridge.cv2_to_imgmsg(disparity, encoding="passthrough")
 
                     # Publish to ros
-                    self.image_l_pub.publish(ros_image_l)
-                    self.image_r_pub.publish(ros_image_r)
+                    #self.image_l_pub.publish(ros_image_l)
+                    #self.image_r_pub.publish(ros_image_r)
                     if match_result.valid:
-                        disparity_msg = DisparityImage()
-                        disparity_msg.image = ros_image_disp
-                        self.image_disp_pub.publish(disparity_msg)
+                        #disparity_msg = DisparityImage()
+                        #disparity_msg.image = ros_image_disp
+                        #self.image_disp_pub.publish(disparity_msg)
+                        self.image_disp_pub_comp.publish(ros_image_disp_comp)
 
                     if left_tag_found:
                         self.left_transform_pub.publish(self.april_transform_l)
@@ -254,9 +262,6 @@ class titania_node:
 
                     # Annotate and Display images only if debug is true
                     if self.debug:
-                        # Print values for debug
-                        print("Left Tag Pose: ", left_tag_pose)
-
                         # Copy image for annotation
                         annotate_l = rect_image_pair.left.copy()
                         annotate_r = rect_image_pair.right.copy()
@@ -282,5 +287,5 @@ class titania_node:
         cv2.destroyAllWindows()
 
 if __name__ == "__main__":
-    main = titania_node(debug=False)
+    main = titania_node(debug=debug)
     main.loop()
