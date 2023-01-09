@@ -20,7 +20,7 @@ from sensor_msgs.msg import CompressedImage
 from stereo_msgs.msg import DisparityImage
 from geometry_msgs.msg import Transform, Quaternion
 
-debug = False
+debug = True
 
 class titania_node:
 
@@ -186,6 +186,7 @@ class titania_node:
                         #depth_image = phase.disparity2depth(match_result.disparity, self.calibration.getQ())
                     else:
                         print("Failed to compute match, no disparity image created")
+                        continue
 
                     # Convert Images to grayscale for apriltag detection
                     grayscale_l = cv2.cvtColor(rect_image_pair.left, cv2.COLOR_BGR2GRAY)
@@ -240,19 +241,20 @@ class titania_node:
                         self.april_transform_r.rotation = Quaternion(*quaternion_about_axis(angle, rvec_r[0]))
 
                     # Convert opencv images to ros msgs
-                    #ros_image_l = self.bridge.cv2_to_compressed_imgmsg(rect_image_pair.left)
-                    #ros_image_r = self.bridge.cv2_to_compressed_imgmsg(rect_image_pair.right)
+                    ros_image_l = self.bridge.cv2_to_compressed_imgmsg(rect_image_pair.left)
+                    ros_image_r = self.bridge.cv2_to_compressed_imgmsg(rect_image_pair.right)
                     if match_result.valid:
                         ros_image_disp_comp = self.bridge.cv2_to_compressed_imgmsg(disparity_image)
                         #ros_image_disp = self.bridge.cv2_to_imgmsg(disparity, encoding="passthrough")
 
                     # Publish to ros
-                    #self.image_l_pub.publish(ros_image_l)
-                    #self.image_r_pub.publish(ros_image_r)
+                    self.image_l_pub.publish(ros_image_l)
+                    self.image_r_pub.publish(ros_image_r)
                     if match_result.valid:
                         #disparity_msg = DisparityImage()
                         #disparity_msg.image = ros_image_disp
                         #self.image_disp_pub.publish(disparity_msg)
+                        print("publishing")
                         self.image_disp_pub_comp.publish(ros_image_disp_comp)
 
                     if left_tag_found:
@@ -281,10 +283,12 @@ class titania_node:
                         cv2.waitKey(1)
 
                 else:
-                    self.titaniaCam.disconnect()
-                    raise Exception("Failed to read stereo result")
+                    #self.titaniaCam.disconnect()
+                    #raise Exception("Failed to read stereo result")
+                    print("Failed to get stereo result")
 
         cv2.destroyAllWindows()
+        self.titaniaCam.disconnect()
 
 if __name__ == "__main__":
     main = titania_node(debug=debug)
