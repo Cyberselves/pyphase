@@ -20,7 +20,7 @@ from sensor_msgs.msg import CompressedImage
 from stereo_msgs.msg import DisparityImage
 from geometry_msgs.msg import Transform, Quaternion
 
-debug = True
+debug = False
 
 class titania_node:
 
@@ -188,6 +188,8 @@ class titania_node:
                         print("Failed to compute match, no disparity image created")
                         continue
 
+                    """
+
                     # Convert Images to grayscale for apriltag detection
                     grayscale_l = cv2.cvtColor(rect_image_pair.left, cv2.COLOR_BGR2GRAY)
                     grayscale_r = cv2.cvtColor(rect_image_pair.right, cv2.COLOR_BGR2GRAY)
@@ -240,6 +242,8 @@ class titania_node:
                         angle = cv2.norm(rvec_r[0])
                         self.april_transform_r.rotation = Quaternion(*quaternion_about_axis(angle, rvec_r[0]))
 
+                    """
+
                     # Convert opencv images to ros msgs
                     ros_image_l = self.bridge.cv2_to_compressed_imgmsg(rect_image_pair.left)
                     ros_image_r = self.bridge.cv2_to_compressed_imgmsg(rect_image_pair.right)
@@ -257,10 +261,12 @@ class titania_node:
                         print("publishing")
                         self.image_disp_pub_comp.publish(ros_image_disp_comp)
 
+                    """
                     if left_tag_found:
                         self.left_transform_pub.publish(self.april_transform_l)
                     if right_tag_found:
                         self.right_transform_pub.publish(self.april_transform_r)
+                    """
 
                     # Annotate and Display images only if debug is true
                     if self.debug:

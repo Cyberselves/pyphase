@@ -10,7 +10,7 @@
 import cv2
 import os
 import phase.pyphase as phase
-
+import time
 
 # Define information about the Titania camera
 # Each camera has unique camera_name, left_serial, and right_serial
@@ -64,6 +64,8 @@ device_info = phase.stereocamera.CameraDeviceInfo(
 # Create stereo camera
 tinaniaCam = phase.stereocamera.TitaniaStereoCamera(device_info)
 
+pre = 0
+
 # Connect camera and start data capture
 print("Connecting to camera...")
 ret = tinaniaCam.connect()
@@ -75,6 +77,10 @@ if (ret):
     while tinaniaCam.isConnected():
         read_result = tinaniaCam.read()
         if read_result.valid:
+
+            print("HZ: ", 1/(time.time()-pre))
+            pre = time.time()
+
             # Rectify stereo image pair
             rect_image_pair = calibration.rectify(read_result.left, read_result.right)
             rect_img_left = rect_image_pair.left
@@ -91,20 +97,23 @@ if (ret):
             disparity = match_result.disparity
 
             # Convert disparity into 3D pointcloud
-            xyz = phase.disparity2xyz(
-                disparity, calibration.getQ())
+            #xyz = phase.disparity2xyz(
+             #   disparity, calibration.getQ())
 
             # Display stereo and disparity images
             img_left = phase.scaleImage(
                     rect_img_left, display_downsample)
             img_right = phase.scaleImage(
                     rect_img_right, display_downsample)
-            img_disp = phase.scaleImage(
-                    phase.normaliseDisparity(
-                        disparity), display_downsample)
-            cv2.imshow("Left", img_left)
-            cv2.imshow("Right", img_right)
-            cv2.imshow("Disparity", img_disp)
+            #img_disp = phase.scaleImage(
+            #        phase.normaliseDisparity(
+            #            disparity), display_downsample)
+            norm_disp = phase.normaliseDisparity(disparity)
+            
+
+            cv2.imshow("Left", rect_img_left)
+            cv2.imshow("Right", rect_img_right)
+            cv2.imshow("Disparity", norm_disp)
             c = cv2.waitKey(1)
 
             # Save the pointcloud of current frame if 'p' is pressed
@@ -118,6 +127,7 @@ if (ret):
             # Quit data capture if 'q' is pressed
             if c == ord('q'):
                 break
+         
         else:
             tinaniaCam.disconnect()
             raise Exception("Failed to read stereo result")
