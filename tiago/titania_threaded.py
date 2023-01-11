@@ -117,7 +117,7 @@ class titania_node:
         self.camera_params_l = (1744.9, 1745.47, 931.505, 581.185)
         self.camera_params_r = (1744.12, 1744.4, 962.712, 587.003)
 
-    def read_callback(self):
+    def read_callback(self, read_result: phase.stereocamera.CameraReadResult):
         self.capture_count = self.capture_count + 1
 
     def draw_tags(self, img, tags):
@@ -175,6 +175,7 @@ class titania_node:
             # Start capturing images and set exposure value
             self.titaniaCam.startCapture()
             self.titaniaCam.setExposure(self.exposure_value)
+            self.titaniaCam.setFrameRate(5.0)
             self.titaniaCam.startContinousReadThread()
             #Start Loop
             while not rospy.is_shutdown() and self.titaniaCam.isConnected:
